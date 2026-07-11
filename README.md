@@ -1,0 +1,49 @@
+# nanoodle-skill
+
+An [Agent Skill](https://agentskills.io) that teaches any AI agent to build and
+run [nanoodle](https://nanoodle.com) graphs — multi-model AI media pipelines
+(text, LLM, image, video, audio) saved as a single `noodle-graph.json` and
+executed headlessly against the [NanoGPT](https://nano-gpt.com) API with the
+user's own key.
+
+The skill itself is [SKILL.md](SKILL.md). Once installed, an agent that supports
+the Agent Skills format (Claude Code, Cursor, Gemini CLI, OpenCode, and
+[many others](https://agentskills.io)) will pull it in whenever a task looks
+like "generate an image/video/audio pipeline" or "run this nanoodle workflow".
+
+## Install
+
+Via the open [skills CLI](https://github.com/vercel-labs/skills) (installs into
+`~/.agents/skills/` with vendor symlinks):
+
+```sh
+npx skills add nanoodlecom/nanoodle-skill -g -y
+```
+
+Or manually: copy this directory to `.claude/skills/nanoodle-skill/`
+(project-level), `~/.claude/skills/nanoodle-skill/` (user-level), or wherever
+your agent reads skills from.
+
+## What's inside
+
+```
+nanoodle-skill/
+├── SKILL.md                        # the skill: run graphs via CLI or JS/Python library
+├── references/graph-format.md      # noodle-graph.json format + node-type table
+└── examples/poster.noodle-graph.json  # runnable example: idea → LLM → poster image
+```
+
+Runs require a NanoGPT API key (`NANOGPT_API_KEY`) with balance — generations
+spend real money. Loading and inspecting graphs is free and offline.
+
+## Related
+
+- [nanoodle](https://github.com/nanoodlecom/nanoodle) — the browser editor (nanoodle.com)
+- [nanoodle-js](https://github.com/nanoodlecom/nanoodle-js) — `nanoodle` on npm: library + CLI
+- [nanoodle-py](https://github.com/nanoodlecom/nanoodle-py) — `nanoodle` on PyPI: library + CLI
+
+This repo is part of the nanoodle launch cadence and goes public with it.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Not affiliated with NanoGPT.

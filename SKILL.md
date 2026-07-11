@@ -1,0 +1,191 @@
+---
+name: nanoodle-skill
+description: Build and run nanoodle graphs — multi-model AI media pipelines (text, LLM, image, video, audio) saved as a single noodle-graph.json and executed headlessly against the NanoGPT API. Use when the user wants an AI image/video/audio or multi-model generation pipeline, wants to run or automate a nanoodle workflow / noodle-graph.json file, or brings a nanoodle.com share link (#g= graph or #a= app).
+license: MIT
+metadata:
+  author: nanoodlecom
+  homepage: https://nanoodle.com
+---
+
+# nanoodle: build and run multi-model AI pipelines
+
+[nanoodle](https://nanoodle.com) is a browser-based node editor for AI workflows:
+you wire text, LLM, image, video, and audio nodes into a feed-forward graph
+("noodle"), run it against the [NanoGPT](https://nano-gpt.com) API with your own
+key, turn it into a shareable app, and export it as a single self-contained HTML
+file. There is no backend and no analytics — the API key and workflows stay in
+the browser (or, headlessly, in your process). A saved workflow is one JSON file
+(`noodle-graph.json`) that the official executor packages re-run byte-for-byte:
+`nanoodle` on npm (Node >= 20, zero deps) and `nanoodle` on PyPI (Python >= 3.9,
+stdlib only). Same graphs, same semantics, in either runtime.
+
+## API key (bring your own)
+
+Every generation is billed by NanoGPT against the user's own balance:
+
+1. The user creates an API key at [nano-gpt.com](https://nano-gpt.com) (an OAuth
+   access token also works) and funds the balance.
+2. Export it as `NANOGPT_API_KEY` — both executors read that env var by default.
+
+Never print or log the key. Loading, validating, and inspecting a workflow never
+calls the API; only `run` spends money.
+
+## Run a graph headlessly
+
+### CLI (Node — requires `nanoodle` >= 0.1.1 on npm)
+
+```sh
+export NANOGPT_API_KEY=...
+
+# Inspect first — offline, free; prints the graph's inputs, outputs, settings, nodes
+npx nanoodle inspect graph.json
+
+# Run — calls NanoGPT and spends from the balance
+npx nanoodle run graph.json --input Text="a cozy ramen shop" --out ./out
+```
+
+Full surface (from `npx nanoodle --help`):
+
+```
+nanoodle run <graph.json> [--input k=v]... [--set k=v]... [--out dir] [--json] [--key K] [--env-file path] [--timeout ms]
+nanoodle inspect <graph.json> [--key K] [--env-file path]
+nanoodle --version
+```
+
+- `--input k=v` — set a workflow input (`Text=hello`, `n2.system=@notes.txt`;
+  `@path` reads a file — media files ride as media, `.txt`/`.md`/`.json` as text)
+- `--set k=v` — override a setting (`n3.model=flux-pro`, `n3.size=1k`)
+- `--out dir` — save media outputs into dir as `<OutputKey>.<ext>` (extension
+  follows MIME — use the path the CLI prints, don't hard-code `.png`). Without
+  `--out`, text outputs print and media outputs print as URLs (long data: URLs
+  are truncated with a hint to use `--out`).
+- `--json` — machine-readable result on stdout: `outputs` (paths/text),
+  `costUsd`, `costExact`, `remainingBalance`, `errors`, per-node statuses
+- `--key K` / `--env-file p` — key precedence here: `--key` > `--env-file` >
+  `NANOGPT_API_KEY`
+- Exit code 0 on success, 1 on failure (with `--json`, partial results are still
+  printed when an output node failed)
+
+### CLI (Python — `pip install nanoodle`, >= 0.1.3)
+
+Installed as `nanoodle-py` (`python -m nanoodle` always works); same commands:
+
+```sh
+nanoodle-py inspect graph.json
+nanoodle-py run graph.json --input Text="a cozy ramen shop" --set n3.size=1k --out ./out
+```
+
+Porting note: in the Python CLI an ambient `NANOGPT_API_KEY` wins over
+`--env-file`; in the Node CLI `--env-file` wins.
+
+### Library (JavaScript)
+
+```js
+import { Workflow } from "nanoodle";
+
+const wf = await Workflow.load("noodle-graph.json");           // key from NANOGPT_API_KEY
+const result = await wf.run({ Text: "a cozy ramen shop on a rainy night" });
+await result.get("Image").save("ramen.png");                   // media: MediaRef (url + bytes()/save())
+console.log(result.costUsd, result.remainingBalance);
+```
+
+Discover the interface programmatically: `wf.inputs`, `wf.outputs`,
+`wf.settings`. Media inputs: `mediaFromFile("photo.jpg")`, an `https://` URL, or
+raw bytes. Settings/timeout/progress ride on the second argument:
+`wf.run(inputs, { settings: { "n3.model": "flux-dev" }, timeoutMs, onProgress })`.
+`run()` rejects with `RunError` when an output node fails; `err.result` still
+has partial results and cost so far.
+
+### Library (Python)
+
+```python
+from nanoodle import Workflow
+
+wf = Workflow.load("noodle-graph.json")
+result = wf.run({"Text": "a cozy ramen shop on a rainy night"})
+result["Image"].save("ramen.png")            # media: MediaRef (url + bytes()/save())
+print(result.cost_usd, result.remaining_balance)
+```
+
+Same shape, snake_case: `wf.inputs/outputs/settings`, `media_from_file(...)`,
+`wf.run(inputs, settings={...}, timeout=600, on_progress=...)`, `RunError` with
+`error.result`.
+
+### Input, output, and setting keys
+
+Input keys are flexible and case-insensitive: the node's custom name (`"Idea"`),
+`nodeId.field` (`"n2.system"`), or the input's label when unique. Output keys
+are the sink node's custom name (or its type name). Settings use `nodeId.field`
+keys (`"n3.model"`). A workflow with exactly one required input also accepts a
+bare value: `wf.run("hello")`. Run `inspect` to see the real keys — what it
+prints is authoritative.
+
+## The noodle-graph.json shape
+
+A graph is plain JSON — nodes with typed ports, links between matching port
+kinds (text | image | audio | video), no cycles:
+
+```json
+{
+  "v": 1,
+  "nodes": [
+    { "id": "n1", "type": "text",  "name": "Idea",   "fields": { "text": "a cozy ramen shop" } },
+    { "id": "n2", "type": "llm",   "fields": { "model": "zai-org/glm-5.2", "system": "You write image prompts..." } },
+    { "id": "n3", "type": "image", "name": "Poster", "fields": { "model": "nano-banana-2-lite", "size": "1k" } }
+  ],
+  "links": [
+    { "id": "l1", "from": { "node": "n1", "port": "text" }, "to": { "node": "n2", "port": "prompt" } },
+    { "id": "l2", "from": { "node": "n2", "port": "text" }, "to": { "node": "n3", "port": "prompt" } }
+  ]
+}
+```
+
+You can author this by hand (both executors accept the minimal `{nodes, links}`
+form) or build it visually at nanoodle.com and press 💾 Save. Node `name` values
+become the input/output keys agents use — name every node you'll touch. Full
+field-by-field detail and the node-type table:
+[references/graph-format.md](references/graph-format.md). A complete runnable
+example (idea → LLM prompt-writer → poster image) is at
+[examples/poster.noodle-graph.json](examples/poster.noodle-graph.json):
+
+```sh
+npx nanoodle run examples/poster.noodle-graph.json --input "Idea=..." --out ./out
+```
+
+## Share links
+
+nanoodle workflows are shared as URL fragments: `https://nanoodle.com/#g=...`
+opens a graph in the editor, `https://nanoodle.com/play#a=...` opens a runnable
+app. The payload lives entirely in the `#` fragment, which browsers never send
+to any server — sharing a link does not upload the workflow anywhere. To
+automate a shared workflow, open the link in a browser and press 💾 Save to get
+its `noodle-graph.json`, then run that file with the executors above.
+
+## Limits and cost — be honest with the user
+
+- **Stateless feed-forward DAG.** No loops, no branches that re-enter, no
+  memory between runs. Each run is: inputs in → nodes execute in topological
+  order → outputs out.
+- **Every run spends real money** (except nodes that run locally). Costs are
+  per-generation via NanoGPT; the result reports `costUsd`/`cost_usd`,
+  `costExact` (false means some call omitted a price, so the total is a floor)
+  and `remainingBalance`. A price of 0 means subscription-included, not unknown.
+- **Headless executors support the NanoGPT-backed nodes** (llm, image, draw,
+  edit, inpaint, vision, tvideo, ivideo, vedit, lipsync, music, remix, tts,
+  transcribe) plus local ones (text, uploads, choice, join, comment). Browser-
+  only media-processing nodes (resize, vframes, combine, soundtrack, trim,
+  extractaudio) load with a warning and fail fast at run — before any network
+  call — with `UnsupportedNodeError`.
+- **Media rides inline as base64** (NanoGPT has no upload endpoint). Files over
+  ~4.4 MB (~3.5 MB for transcription) are refused locally before any paid call.
+- Missing keys, bad inputs, and unknown node types all fail **before** anything
+  is spent.
+
+## Full reference
+
+- Machine-readable overview: https://nanoodle.com/llms.txt
+- Format / engine / IO specs: `docs/SPEC-format.md`, `docs/SPEC-engine.md`,
+  `docs/SPEC-io.md` in [nanoodle-js](https://github.com/nanoodlecom/nanoodle-js)
+  (the [nanoodle-py](https://github.com/nanoodlecom/nanoodle-py) docs mirror them)
+- Turning one of your own workflows into a dedicated agent skill:
+  `docs/agent-skills.md` in either executor repo
