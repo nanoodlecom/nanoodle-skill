@@ -32,7 +32,7 @@ calls the API; only `run` spends money.
 
 ## Run a graph headlessly
 
-### CLI (Node — requires `nanoodle` >= 0.1.1 on npm)
+### CLI (Node — requires `nanoodle` >= 0.2.0 on npm)
 
 ```sh
 export NANOGPT_API_KEY=...
@@ -41,42 +41,60 @@ export NANOGPT_API_KEY=...
 npx nanoodle inspect graph.json
 
 # Run — calls NanoGPT and spends from the balance
-npx nanoodle run graph.json --input Text="a cozy ramen shop" --out ./out
+npx nanoodle run graph.json --input Text="a cozy ramen shop"
 ```
 
 Full surface (from `npx nanoodle --help`):
 
 ```
-nanoodle run <graph.json> [--input k=v]... [--set k=v]... [--out dir] [--json] [--key K] [--env-file path] [--timeout ms]
-nanoodle inspect <graph.json> [--key K] [--env-file path]
-nanoodle --version
+nanoodle run <graph.json|share-url> [--input k=v]... [--set k=v]... [--out dir] [--json] [--key K] [--env-file path] [--timeout ms]
+nanoodle inspect <graph.json|share-url>
+nanoodle init [path]
+nanoodle --help | --version
 ```
 
+- `run` executes a workflow (needs an API key, spends from the balance);
+  `inspect` shows a workflow's inputs, outputs, and settings — fully offline, no
+  key needed; `init` writes the starter graph (text → LLM prompt-writer → image)
+  to path (default `./noodle-graph.json`). Both `run` and `inspect` take a local
+  file or a share URL directly.
 - `--input k=v` — set a workflow input (`Text=hello`, `n2.system=@notes.txt`;
   `@path` reads a file — media files ride as media, `.txt`/`.md`/`.json` as text)
 - `--set k=v` — override a setting (`n3.model=flux-pro`, `n3.size=1k`)
-- `--out dir` — save media outputs into dir as `<OutputKey>.<ext>` (extension
-  follows MIME — use the path the CLI prints, don't hard-code `.png`). Without
-  `--out`, text outputs print and media outputs print as URLs (long data: URLs
-  are truncated with a hint to use `--out`).
-- `--json` — machine-readable result on stdout: `outputs` (paths/text),
-  `costUsd`, `costExact`, `remainingBalance`, `errors`, per-node statuses
+- `--out dir` — directory for media outputs (default `./noodle-out`, created
+  only when needed). Media is always written to disk as `<OutputKey>.<ext>` —
+  extension follows MIME, so use the path the CLI prints, don't hard-code
+  `.png`. Text outputs land in the run summary.
+- `--json` — quiet mode: skips the progress/log lines on stderr. The JSON run
+  summary — `outputs` (paths/text), `costUsd`, `costExact`, `remainingBalance`,
+  `errors`, per-node statuses — is **always** printed to stdout either way;
+  `--json` only silences the human-readable stderr chatter.
 - `--key K` / `--env-file p` — key precedence here: `--key` > `--env-file` >
   `NANOGPT_API_KEY`
-- Exit code 0 on success, 1 on failure (with `--json`, partial results are still
-  printed when an output node failed)
+- `--timeout ms` — overall run timeout, in milliseconds
+- Exit code 0 on success, 1 on failure (the JSON summary still carries partial
+  results when an output node failed)
 
 ### CLI (Python — `pip install nanoodle`, >= 0.1.3)
 
-Installed as `nanoodle-py` (`python -m nanoodle` always works); same commands:
+Installed as `nanoodle-py` (`python -m nanoodle` always works); same `run` /
+`inspect` commands and graph semantics, but a narrower and slightly different
+flag surface:
 
 ```sh
 nanoodle-py inspect graph.json
 nanoodle-py run graph.json --input Text="a cozy ramen shop" --set n3.size=1k --out ./out
 ```
 
-Porting note: in the Python CLI an ambient `NANOGPT_API_KEY` wins over
-`--env-file`; in the Node CLI `--env-file` wins.
+Porting notes (Python vs Node CLI):
+
+- The key flag is `--api-key` (not `--key`).
+- `--timeout` is in **seconds** (not milliseconds).
+- An ambient `NANOGPT_API_KEY` wins over `--env-file`; in the Node CLI
+  `--env-file` wins.
+- The published PyPI release (0.1.3) predates the npm CLI's 0.2.0 surface: it
+  takes **local graph files only** (no share-URL arguments) and has no `init`
+  command. For share links or `init`, use the Node CLI.
 
 ### Library (JavaScript)
 
@@ -157,9 +175,17 @@ npx nanoodle run examples/poster.noodle-graph.json --input "Idea=..." --out ./ou
 nanoodle workflows are shared as URL fragments: `https://nanoodle.com/#g=...`
 opens a graph in the editor, `https://nanoodle.com/play#a=...` opens a runnable
 app. The payload lives entirely in the `#` fragment, which browsers never send
-to any server — sharing a link does not upload the workflow anywhere. To
-automate a shared workflow, open the link in a browser and press 💾 Save to get
-its `noodle-graph.json`, then run that file with the executors above.
+to any server — sharing a link does not upload the workflow anywhere. The Node
+CLI (>= 0.2.0) takes share URLs directly — no browser round-trip needed:
+
+```sh
+npx nanoodle inspect "https://nanoodle.com/#g=..."     # offline, free
+npx nanoodle run "https://nanoodle.com/#g=..." --input Text="..."
+```
+
+App links (`play#a=` / `play.html#a=`) work the same way. Quote the URL — `#` starts a shell
+comment otherwise. (The Python CLI at 0.1.3 can't do this; save the graph to a
+file first, e.g. via the editor's 💾 Save, or use the Node CLI.)
 
 ## Limits and cost — be honest with the user
 

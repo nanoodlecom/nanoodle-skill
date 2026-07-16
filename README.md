@@ -11,6 +11,13 @@ the Agent Skills format (Claude Code, Cursor, Gemini CLI, OpenCode, and
 [many others](https://agentskills.io)) will pull it in whenever a task looks
 like "generate an image/video/audio pipeline" or "run this nanoodle workflow".
 
+This skill teaches your agent to design and run **any** graph. Want prebuilt
+one-task skills instead (poster, jingle, video teaser)? →
+[noodle-skills](https://github.com/nanoodlecom/noodle-skills). Prefer each
+saved workflow exposed as a typed, callable tool? →
+[nanoodle-mcp](https://github.com/nanoodlecom/nanoodle-mcp). Running in GitHub
+CI? → [run-noodle-action](https://github.com/nanoodlecom/run-noodle-action).
+
 ## Install
 
 Via the open [skills CLI](https://github.com/vercel-labs/skills) (installs into
@@ -41,8 +48,6 @@ spend real money. Loading and inspecting graphs is free and offline.
 - [nanoodle](https://github.com/nanoodlecom/nanoodle) — the browser editor (nanoodle.com)
 - [nanoodle-js](https://github.com/nanoodlecom/nanoodle-js) — `nanoodle` on npm: library + CLI
 - [nanoodle-py](https://github.com/nanoodlecom/nanoodle-py) — `nanoodle` on PyPI: library + CLI
-
-This repo is part of the nanoodle launch cadence and goes public with it.
 
 ## License
 
