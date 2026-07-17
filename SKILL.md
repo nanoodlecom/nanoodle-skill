@@ -32,7 +32,7 @@ calls the API; only `run` spends money.
 
 ## Run a graph headlessly
 
-### CLI (Node — requires `nanoodle` >= 0.2.0 on npm)
+### CLI (Node — `nanoodle` on npm; 0.4.0 is current, the core surface below needs >= 0.2.0)
 
 ```sh
 export NANOGPT_API_KEY=...
@@ -71,6 +71,10 @@ nanoodle --help | --version
   `--json` only silences the human-readable stderr chatter.
 - `--key K` / `--env-file p` — key precedence here: `--key` > `--env-file` >
   `NANOGPT_API_KEY`
+- `--pay` (0.4+) — accountless run, no API key or account: each paid call
+  prints a Nano (XNO) invoice as a scannable QR + `nano:` URI on stderr and
+  waits for the deposit (x402; ignores any configured key; a self-custody
+  wallet does the send)
 - `--timeout ms` — overall run timeout, in milliseconds
 - Exit code 0 on success, 1 on failure (the JSON summary still carries partial
   results when an output node failed)
@@ -92,8 +96,8 @@ Porting notes (Python vs Node CLI):
 - `--timeout` is in **seconds** (not milliseconds).
 - An ambient `NANOGPT_API_KEY` wins over `--env-file`; in the Node CLI
   `--env-file` wins.
-- PyPI 0.2.0 runs share URLs directly (same as the Node CLI) and adds an
-  accountless x402 `--pay` mode the npm 0.2.0 CLI doesn't have. There is no
+- PyPI 0.2.0 runs share URLs directly (same as the Node CLI). Both published
+  CLIs have the accountless x402 `--pay` mode (npm needs 0.4+). There is no
   `init` command — for the starter-graph scaffold, use the Node CLI.
 
 ### Library (JavaScript)
@@ -197,10 +201,13 @@ comment otherwise. The Python CLI (PyPI 0.2.0+) runs share URLs the same way.
   and `remainingBalance`. A price of 0 means subscription-included, not unknown.
 - **Headless executors support the NanoGPT-backed nodes** (llm, image, draw,
   edit, inpaint, vision, tvideo, ivideo, vedit, lipsync, music, remix, tts,
-  transcribe) plus local ones (text, uploads, choice, join, comment). Browser-
-  only media-processing nodes (resize, vframes, combine, soundtrack, trim,
-  extractaudio) load with a warning and fail fast at run — before any network
-  call — with `UnsupportedNodeError`.
+  transcribe) plus local ones (text, uploads, choice, join, comment). Local
+  media-processing nodes (resize, vframes, combine, soundtrack, trim,
+  extractaudio) also run headlessly (npm 0.4+, PyPI 0.2+): the Node CLI prefers
+  a pure-JS path that matches the browser (lossless mp4 remux, PCM-WAV trim,
+  PNG resize) and falls back to ffmpeg on `PATH` for everything else; the
+  Python CLI needs ffmpeg on `PATH` for all of them. ffmpeg is a soft
+  dependency — a clear error if it's required and missing, before any paid call.
 - **Media rides inline as base64** (NanoGPT has no upload endpoint). Files over
   ~4.4 MB (~3.5 MB for transcription) are refused locally before any paid call.
 - Missing keys, bad inputs, and unknown node types all fail **before** anything
