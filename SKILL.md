@@ -75,7 +75,7 @@ nanoodle --help | --version
 - Exit code 0 on success, 1 on failure (the JSON summary still carries partial
   results when an output node failed)
 
-### CLI (Python — `pip install nanoodle`, >= 0.1.3)
+### CLI (Python — `pip install nanoodle`, >= 0.2.0)
 
 Installed as `nanoodle-py` (`python -m nanoodle` always works); same `run` /
 `inspect` commands and graph semantics, but a narrower and slightly different
@@ -92,9 +92,9 @@ Porting notes (Python vs Node CLI):
 - `--timeout` is in **seconds** (not milliseconds).
 - An ambient `NANOGPT_API_KEY` wins over `--env-file`; in the Node CLI
   `--env-file` wins.
-- The published PyPI release (0.1.3) predates the npm CLI's 0.2.0 surface: it
-  takes **local graph files only** (no share-URL arguments) and has no `init`
-  command. For share links or `init`, use the Node CLI.
+- PyPI 0.2.0 runs share URLs directly (same as the Node CLI) and adds an
+  accountless x402 `--pay` mode the npm 0.2.0 CLI doesn't have. There is no
+  `init` command — for the starter-graph scaffold, use the Node CLI.
 
 ### Library (JavaScript)
 
@@ -184,8 +184,7 @@ npx nanoodle run "https://nanoodle.com/#g=..." --input Text="..."
 ```
 
 App links (`play#a=` / `play.html#a=`) work the same way. Quote the URL — `#` starts a shell
-comment otherwise. (The Python CLI at 0.1.3 can't do this; save the graph to a
-file first, e.g. via the editor's 💾 Save, or use the Node CLI.)
+comment otherwise. The Python CLI (PyPI 0.2.0+) runs share URLs the same way.
 
 ## Limits and cost — be honest with the user
 
