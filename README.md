@@ -11,10 +11,11 @@ the Agent Skills format (Claude Code, Cursor, Gemini CLI, OpenCode, and
 [many others](https://agentskills.io)) will pull it in whenever a task looks
 like "generate an image/video/audio pipeline" or "run this nanoodle workflow".
 
-This skill teaches your agent to design and run **any** graph. Want prebuilt
-one-task skills instead (poster, jingle, video teaser)? →
-[noodle-skills](https://github.com/nanoodlecom/noodle-skills). Prefer each
-saved workflow exposed as a typed, callable tool? →
+This skill teaches your agent to design and run **any** graph — the right
+pick for one workflow, or for making new ones. Want prebuilt one-task skills
+instead (poster, jingle, video teaser)? →
+[noodle-skills](https://github.com/nanoodlecom/noodle-skills). Built up a
+whole folder of saved workflows to serve as typed, callable tools? →
 [nanoodle-mcp](https://github.com/nanoodlecom/nanoodle-mcp). Running in GitHub
 CI? → [run-noodle-action](https://github.com/nanoodlecom/run-noodle-action).
 
