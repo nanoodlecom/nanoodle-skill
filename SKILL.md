@@ -174,6 +174,39 @@ example (idea → LLM prompt-writer → poster image) is at
 npx nanoodle run examples/poster.noodle-graph.json --input "Idea=..." --out ./out
 ```
 
+## Running the user's own workflow
+
+The user doesn't install their graphs — they just give you one. Two forms, both
+run the same way:
+
+- **A file** they saved from nanoodle.com — `something.noodle-graph.json`.
+- **A share link** — `https://nanoodle.com/#g=...`.
+
+When they hand you either, do this:
+
+```sh
+# 1. Read its interface (free, offline) — this tells you the input names to ask for
+npx nanoodle inspect their-graph.json      # or the "#g=..." URL, quoted
+
+# 2. Run it with those inputs
+npx nanoodle run their-graph.json --input "Idea=a cozy ramen shop" --out ./out
+```
+
+`inspect` prints the exact input and output names (they come from the names the
+user gave their nodes), so you never have to guess. That's the whole thing — no
+setup beyond the API key.
+
+### Making one workflow run automatically
+
+If the user wants a graph to fire on its own whenever they ask for that kind of
+thing (e.g. "make a poster" always running *their* poster graph), it becomes its
+own little skill — a folder with the `.noodle-graph.json` and a short `SKILL.md`.
+Step-by-step recipe:
+[docs/agent-skills.md](https://github.com/nanoodlecom/nanoodle-js/blob/main/docs/agent-skills.md).
+Ready-made examples: [noodle-skills](https://github.com/nanoodlecom/noodle-skills).
+Each workflow as a callable tool instead:
+[nanoodle-mcp](https://github.com/nanoodlecom/nanoodle-mcp).
+
 ## Share links
 
 nanoodle workflows are shared as URL fragments: `https://nanoodle.com/#g=...`
