@@ -239,7 +239,7 @@ comment otherwise. The Python CLI (PyPI 0.2.0+) runs share URLs the same way.
   per-generation via NanoGPT; the result reports `costUsd`/`cost_usd`,
   `costExact` (false means some call omitted a price, so the total is a floor)
   and `remainingBalance`. A price of 0 means subscription-included, not unknown.
-- **Headless executors support the NanoGPT-backed nodes** (llm, image, draw,
+- **Headless executors support the NanoGPT-backed nodes** (llm, image,
   edit, inpaint, vision, tvideo, ivideo, vedit, lipsync, music, remix, tts,
   transcribe) plus local ones (text, uploads, choice, join, comment). Local
   media-processing nodes (resize, vframes, combine, soundtrack, trim,
