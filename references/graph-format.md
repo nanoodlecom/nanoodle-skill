@@ -36,6 +36,13 @@ JSON serialization of the graph, no wrapper. This is the file both executors
   rewritten to `"prompt"`.
 - Media fields are `data:` URLs inline in `fields` (image/audio/video/mask).
   Share links may have them blanked to `""`.
+- **Never write prose placeholders into media fields** (`"image": "[provided
+  separately]"`, a bare file path, etc.). Anything that isn't a `data:` or
+  `http(s)` URL is treated as **empty** at load (with a warning): leave the
+  field `""` or omit it, and the input surfaces as *required* in
+  `inspect`/`wf.inputs` — supply the file at run time with
+  `--input "Image=@photo.jpg"` (or `mediaFromFile` / `media_from_file` in the
+  libraries).
 - Every `<textarea>`-style field is also a wireable text input port with port
   name == field name (except on `text`, `choice`, `comment` nodes and the
   `extraJson` field). A wire into a field-port overrides the typed field value

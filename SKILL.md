@@ -164,7 +164,14 @@ kinds (text | image | audio | video), no cycles:
 
 You can author this by hand (both executors accept the minimal `{nodes, links}`
 form) or build it visually at nanoodle.com and press 💾 Save. Node `name` values
-become the input/output keys agents use — name every node you'll touch. Full
+become the input/output keys agents use — name every node you'll touch.
+
+Media inputs (upload / aupload / vupload, inpaint image+mask): leave the field
+**empty** (`"image": ""` or omit it) — the input then shows as *required* in
+`inspect` and you pass the file at run time with `--input "Image=@photo.jpg"`.
+Never write a prose placeholder like `"[image provided separately]"` into a
+media field: anything that isn't a `data:`/`http(s)` URL is treated as empty at
+load (with a warning), never sent to the API. Full
 field-by-field detail and the node-type table:
 [references/graph-format.md](references/graph-format.md). A complete runnable
 example (idea → LLM prompt-writer → poster image) is at
