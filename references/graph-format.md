@@ -62,7 +62,6 @@ Port kinds: text | image | audio | video.
 | join | Join | a:text, b:text | — | text:text | sep (default `" "`; literal `"\n"` means newline) |
 | llm | LLM | — | img1..:image (vision), audio:audio | text:text | model, system, prompt, temperature, maxTokens, format(Text\|JSON), reasoningEffort, showThinking |
 | image | Image | — | — | image:image | model, prompt, size, variations, seed, customCivitaiAir |
-| draw | Draw | — | img1..:image | image:image, text:text | model, system, prompt, showThinking |
 | edit | Edit | — | image, image2..:image | image:image | model, prompt, size, seed |
 | inpaint | Inpaint | image:image, mask:image | — | image:image | model, prompt, size, seed, brush |
 | resize | Resize/crop | image:image | — | image:image | mode(fit\|fill\|exact), width, height (LOCAL, browser-only) |
@@ -83,7 +82,7 @@ Port kinds: text | image | audio | video.
 | comment | Comment | — (note; never runs) | — | — | text, color |
 
 Headless executor support: local nodes (text, upload, aupload, vupload, choice,
-join, comment) run in-process; NanoGPT nodes (llm, image, draw, edit, inpaint,
+join, comment) run in-process; NanoGPT nodes (llm, image, edit, inpaint,
 vision, tvideo, ivideo, vedit, lipsync, music, remix, tts, transcribe) call the
 API; the rows marked LOCAL/browser-only (resize, vframes, combine, soundtrack,
 trim, extractaudio) are browser-only media processing — the executors load such
