@@ -247,7 +247,9 @@ comment otherwise. The Python CLI (PyPI 0.2.0+) runs share URLs the same way.
   a pure-JS path that matches the browser (lossless mp4 remux, PCM-WAV trim,
   PNG resize) and falls back to ffmpeg on `PATH` for everything else; the
   Python CLI needs ffmpeg on `PATH` for all of them. ffmpeg is a soft
-  dependency — a clear error if it's required and missing, before any paid call.
+  dependency — a clear error if it's required and missing. That error arrives
+  when the node runs, so put a media-only graph through once before you wire a
+  paid node in front of it.
 - **Media rides inline as base64** (NanoGPT has no upload endpoint). Files over
   ~4.4 MB (~3.5 MB for transcription) are refused locally before any paid call.
 - Missing keys, bad inputs, and unknown node types all fail **before** anything

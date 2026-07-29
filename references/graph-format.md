@@ -64,30 +64,47 @@ Port kinds: text | image | audio | video.
 | image | Image | — | — | image:image | model, prompt, size, variations, seed, customCivitaiAir |
 | edit | Edit | — | image, image2..:image | image:image | model, prompt, size, seed |
 | inpaint | Inpaint | image:image, mask:image | — | image:image | model, prompt, size, seed, brush |
-| resize | Resize/crop | image:image | — | image:image | mode(fit\|fill\|exact), width, height (LOCAL, browser-only) |
+| resize | Resize/crop | image:image | — | image:image | mode(fit\|fill\|exact), width, height (LOCAL media) |
 | vision | Vision | image:image | — | text:text | model, q |
 | tvideo | Text→Video | — | ref1..:image | video:video | model, prompt, duration, aspect, resolution, modelOpts |
 | ivideo | Image→Video | image:image | endframe:image | video:video | model, prompt, duration, aspect, resolution, modelOpts |
 | vedit | Video edit | video:video | — | video:video | model, prompt, resolution, modelOpts |
-| vframes | Video→frames | video:video | — | frame1..frameN:image | frames(1-12), gap, dir(end\|start) (LOCAL, browser-only) |
-| combine | Combine videos | — | clip1..:video | video:video | dedup (LOCAL, browser-only) |
-| soundtrack | Soundtrack | video:video, audio:audio | — | video:video | loop (LOCAL, browser-only) |
+| vframes | Video→frames | video:video | — | frame1..frameN:image | frames(1-12), gap, dir(end\|start) (LOCAL media) |
+| combine | Combine videos | — | clip1..:video | video:video | dedup (LOCAL media) |
+| soundtrack | Soundtrack | video:video, audio:audio | — | video:video | loop (LOCAL media) |
 | lipsync | Avatar/lipsync | image:image, audio:audio | — | video:video | model, prompt, resolution, modelOpts |
 | music | Music | — | — | audio:audio | model, prompt, lyrics, instrumental, duration, negative_prompt, seed, extraJson |
 | remix | Remix audio | audio:audio | — | audio:audio | model, prompt, lyrics, duration, extraJson |
 | tts | Speech | — | — | audio:audio | model, prompt, voice, speed, instructions, extraJson |
-| trim | Trim audio | audio:audio | — | audio:audio | start, length (LOCAL, browser-only) |
-| extractaudio | Extract audio | video:video | — | audio:audio | start, length (LOCAL, browser-only) |
+| trim | Trim audio | audio:audio | — | audio:audio | start, length (LOCAL media) |
+| extractaudio | Extract audio | video:video | — | audio:audio | start, length (LOCAL media) |
 | transcribe | Transcribe | audio:audio | — | text:text | model, language |
 | comment | Comment | — (note; never runs) | — | — | text, color |
 
 Headless executor support: local nodes (text, upload, aupload, vupload, choice,
 join, comment) run in-process; NanoGPT nodes (llm, image, edit, inpaint,
 vision, tvideo, ivideo, vedit, lipsync, music, remix, tts, transcribe) call the
-API; the rows marked LOCAL/browser-only (resize, vframes, combine, soundtrack,
-trim, extractaudio) are browser-only media processing — the executors load such
-graphs with a warning and fail fast at run with `UnsupportedNodeError`, before
-any network call.
+API; the rows marked LOCAL media (resize, vframes, combine, soundtrack, trim,
+extractaudio) also run headlessly, on the machine you run them on, and never
+spend. Some of them need `ffmpeg` and `ffprobe` on `PATH`:
+
+| node | Node CLI / nanoodle-js | Python CLI / nanoodle-py |
+|---|---|---|
+| resize | pure JS for a PNG source, else ffmpeg | ffmpeg |
+| trim | pure JS for a PCM WAV source, else ffmpeg | ffmpeg |
+| combine | pure JS lossless mp4 remux when every clip is mp4 with matching stream parameters, else ffmpeg | ffmpeg |
+| vframes | ffmpeg | ffmpeg |
+| soundtrack | ffmpeg | ffmpeg |
+| extractaudio | ffmpeg | ffmpeg |
+
+ffmpeg is a soft dependency, not a package dependency. A node that needs it and
+cannot find it stops the run with a clear error naming it. That error arrives
+when the node's turn comes, so paid nodes earlier in the graph have already
+spent — run a media-only graph once to prove the setup first.
+
+Only an *unknown* node type is refused up front: the libraries warn at load and
+throw `UnsupportedNodeError` at run, before any network call. That is what a
+graph saved before 2026-07-22 with the retired `draw` node does.
 
 Inpaint note: the browser app composites the mask onto black at the source
 pixel size; the executor libraries pass your mask through verbatim — supply a
