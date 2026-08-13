@@ -64,30 +64,32 @@ Port kinds: text | image | audio | video.
 | image | Image | — | — | image:image | model, prompt, size, variations, seed, customCivitaiAir |
 | edit | Edit | — | image, image2..:image | image:image | model, prompt, size, seed |
 | inpaint | Inpaint | image:image, mask:image | — | image:image | model, prompt, size, seed, brush |
-| resize | Resize/crop | image:image | — | image:image | mode(fit\|fill\|exact), width, height (LOCAL, browser-only) |
+| resize | Resize/crop | image:image | — | image:image | mode(fit\|fill\|exact), width, height (LOCAL, npm 0.4+ / PyPI 0.2+) |
 | vision | Vision | image:image | — | text:text | model, q |
 | tvideo | Text→Video | — | ref1..:image | video:video | model, prompt, duration, aspect, resolution, modelOpts |
 | ivideo | Image→Video | image:image | endframe:image | video:video | model, prompt, duration, aspect, resolution, modelOpts |
 | vedit | Video edit | video:video | — | video:video | model, prompt, resolution, modelOpts |
-| vframes | Video→frames | video:video | — | frame1..frameN:image | frames(1-12), gap, dir(end\|start) (LOCAL, browser-only) |
-| combine | Combine videos | — | clip1..:video | video:video | dedup (LOCAL, browser-only) |
-| soundtrack | Soundtrack | video:video, audio:audio | — | video:video | loop (LOCAL, browser-only) |
+| vframes | Video→frames | video:video | — | frame1..frameN:image | frames(1-12), gap, dir(end\|start) (LOCAL, npm 0.4+ / PyPI 0.2+) |
+| combine | Combine videos | — | clip1..:video | video:video | dedup (LOCAL, npm 0.4+ / PyPI 0.2+) |
+| soundtrack | Soundtrack | video:video, audio:audio | — | video:video | loop (LOCAL, npm 0.4+ / PyPI 0.2+) |
 | lipsync | Avatar/lipsync | image:image, audio:audio | — | video:video | model, prompt, resolution, modelOpts |
 | music | Music | — | — | audio:audio | model, prompt, lyrics, instrumental, duration, negative_prompt, seed, extraJson |
 | remix | Remix audio | audio:audio | — | audio:audio | model, prompt, lyrics, duration, extraJson |
 | tts | Speech | — | — | audio:audio | model, prompt, voice, speed, instructions, extraJson |
-| trim | Trim audio | audio:audio | — | audio:audio | start, length (LOCAL, browser-only) |
-| extractaudio | Extract audio | video:video | — | audio:audio | start, length (LOCAL, browser-only) |
+| trim | Trim audio | audio:audio | — | audio:audio | start, length (LOCAL, npm 0.4+ / PyPI 0.2+) |
+| extractaudio | Extract audio | video:video | — | audio:audio | start, length (LOCAL, npm 0.4+ / PyPI 0.2+) |
 | transcribe | Transcribe | audio:audio | — | text:text | model, language |
 | comment | Comment | — (note; never runs) | — | — | text, color |
 
 Headless executor support: local nodes (text, upload, aupload, vupload, choice,
 join, comment) run in-process; NanoGPT nodes (llm, image, edit, inpaint,
 vision, tvideo, ivideo, vedit, lipsync, music, remix, tts, transcribe) call the
-API; the rows marked LOCAL/browser-only (resize, vframes, combine, soundtrack,
-trim, extractaudio) are browser-only media processing — the executors load such
-graphs with a warning and fail fast at run with `UnsupportedNodeError`, before
-any network call.
+API; the rows marked LOCAL (resize, vframes, combine, soundtrack, trim,
+extractaudio) also run headlessly (npm 0.4+, PyPI 0.2+): Node prefers a
+pure-JS path that matches the browser (lossless mp4 remux, PCM-WAV trim, PNG
+resize) and falls back to ffmpeg on `PATH` for everything else; Python needs
+ffmpeg on `PATH` for all of them. ffmpeg is a soft dependency — a clear error
+if it's required and missing, before any paid call.
 
 Inpaint note: the browser app composites the mask onto black at the source
 pixel size; the executor libraries pass your mask through verbatim — supply a
