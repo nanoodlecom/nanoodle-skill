@@ -32,7 +32,7 @@ calls the API; only `run` spends money.
 
 ## Run a graph headlessly
 
-### CLI (Node — `nanoodle` on npm; 0.4.0 is current, the core surface below needs >= 0.2.0)
+### CLI (Node — `nanoodle` on npm; 0.8.0 is current, the core surface below needs >= 0.2.0; --pay needs 0.4+)
 
 ```sh
 export NANOGPT_API_KEY=...
