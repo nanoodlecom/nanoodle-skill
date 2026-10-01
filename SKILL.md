@@ -32,7 +32,7 @@ calls the API; only `run` spends money.
 
 ## Run a graph headlessly
 
-### CLI (Node — `nanoodle` on npm; 0.4.0 is current, the core surface below needs >= 0.2.0)
+### CLI (Node — `nanoodle` on npm; 0.8.0 is current, the core surface below needs >= 0.2.0; --pay needs 0.4+)
 
 ```sh
 export NANOGPT_API_KEY=...
@@ -248,8 +248,8 @@ comment otherwise. The Python CLI (PyPI 0.2.0+) runs share URLs the same way.
   PNG resize) and falls back to ffmpeg on `PATH` for everything else; the
   Python CLI needs ffmpeg on `PATH` for all of them. ffmpeg is a soft
   dependency — a clear error if it's required and missing. That error arrives
-  when the node runs, so put a media-only graph through once before you wire a
-  paid node in front of it.
+  when the node runs, so paid upstream nodes may already have spent. Run a
+  media-only graph with representative inputs once to prove the setup first.
 - **Media rides inline as base64** (NanoGPT has no upload endpoint). Files over
   ~4.4 MB (~3.5 MB for transcription) are refused locally before any paid call.
 - Missing keys, bad inputs, and unknown node types all fail **before** anything

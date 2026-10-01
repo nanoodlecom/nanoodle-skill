@@ -64,34 +64,36 @@ Port kinds: text | image | audio | video.
 | image | Image | — | — | image:image | model, prompt, size, variations, seed, customCivitaiAir |
 | edit | Edit | — | image, image2..:image | image:image | model, prompt, size, seed |
 | inpaint | Inpaint | image:image, mask:image | — | image:image | model, prompt, size, seed, brush |
-| resize | Resize/crop | image:image | — | image:image | mode(fit\|fill\|exact), width, height (LOCAL media) |
+| resize | Resize/crop | image:image | — | image:image | mode(fit\|fill\|exact), width, height (LOCAL, npm 0.4+ / PyPI 0.2+) |
 | vision | Vision | image:image | — | text:text | model, q |
 | tvideo | Text→Video | — | ref1..:image | video:video | model, prompt, duration, aspect, resolution, modelOpts |
 | ivideo | Image→Video | image:image | endframe:image | video:video | model, prompt, duration, aspect, resolution, modelOpts |
 | vedit | Video edit | video:video | — | video:video | model, prompt, resolution, modelOpts |
-| vframes | Video→frames | video:video | — | frame1..frameN:image | frames(1-12), gap, dir(end\|start) (LOCAL media) |
-| combine | Combine videos | — | clip1..:video | video:video | dedup (LOCAL media) |
-| soundtrack | Soundtrack | video:video, audio:audio | — | video:video | loop (LOCAL media) |
+| vframes | Video→frames | video:video | — | frame1..frameN:image | frames(1-12), gap, dir(end\|start) (LOCAL, npm 0.4+ / PyPI 0.2+) |
+| combine | Combine videos | — | clip1..:video | video:video | dedup (LOCAL, npm 0.4+ / PyPI 0.2+) |
+| soundtrack | Soundtrack | video:video, audio:audio | — | video:video | loop (LOCAL, npm 0.4+ / PyPI 0.2+) |
 | lipsync | Avatar/lipsync | image:image, audio:audio | — | video:video | model, prompt, resolution, modelOpts |
 | music | Music | — | — | audio:audio | model, prompt, lyrics, instrumental, duration, negative_prompt, seed, extraJson |
 | remix | Remix audio | audio:audio | — | audio:audio | model, prompt, lyrics, duration, extraJson |
 | tts | Speech | — | — | audio:audio | model, prompt, voice, speed, instructions, extraJson |
-| trim | Trim audio | audio:audio | — | audio:audio | start, length (LOCAL media) |
-| extractaudio | Extract audio | video:video | — | audio:audio | start, length (LOCAL media) |
+| trim | Trim audio | audio:audio | — | audio:audio | start, length (LOCAL, npm 0.4+ / PyPI 0.2+) |
+| extractaudio | Extract audio | video:video | — | audio:audio | start, length (LOCAL, npm 0.4+ / PyPI 0.2+) |
 | transcribe | Transcribe | audio:audio | — | text:text | model, language |
 | comment | Comment | — (note; never runs) | — | — | text, color |
 
 Headless executor support: local nodes (text, upload, aupload, vupload, choice,
 join, comment) run in-process; NanoGPT nodes (llm, image, edit, inpaint,
 vision, tvideo, ivideo, vedit, lipsync, music, remix, tts, transcribe) call the
-API; the rows marked LOCAL media (resize, vframes, combine, soundtrack, trim,
-extractaudio) also run headlessly, on the machine you run them on, and never
-spend. Some of them need `ffmpeg` and `ffprobe` on `PATH`:
+API; the rows marked LOCAL (resize, vframes, combine, soundtrack, trim,
+extractaudio) also run headlessly (npm 0.4+, PyPI 0.2+), on the machine you run
+them on, without a paid API call. Node prefers a pure-JS path that matches the
+browser and falls back to ffmpeg for other formats; Python uses ffmpeg for all
+six nodes. Some operations also need ffprobe on `PATH`:
 
 | node | Node CLI / nanoodle-js | Python CLI / nanoodle-py |
 |---|---|---|
-| resize | pure JS for a PNG source, else ffmpeg | ffmpeg |
-| trim | pure JS for a PCM WAV source, else ffmpeg | ffmpeg |
+| resize | pure JS for supported PNG sources, else ffmpeg | ffmpeg |
+| trim | pure JS for supported PCM WAV sources, else ffmpeg | ffmpeg |
 | combine | pure JS lossless mp4 remux when every clip is mp4 with matching stream parameters, else ffmpeg | ffmpeg |
 | vframes | ffmpeg | ffmpeg |
 | soundtrack | ffmpeg | ffmpeg |
@@ -99,12 +101,11 @@ spend. Some of them need `ffmpeg` and `ffprobe` on `PATH`:
 
 ffmpeg is a soft dependency, not a package dependency. A node that needs it and
 cannot find it stops the run with a clear error naming it. That error arrives
-when the node's turn comes, so paid nodes earlier in the graph have already
-spent — run a media-only graph once to prove the setup first.
+when the node runs, so paid upstream nodes may already have spent — run a
+media-only graph with representative inputs once to prove the setup first.
 
-Only an *unknown* node type is refused up front: the libraries warn at load and
-throw `UnsupportedNodeError` at run, before any network call. That is what a
-graph saved before 2026-07-22 with the retired `draw` node does.
+Unknown node types (including the retired `draw` node) warn at load and throw
+`UnsupportedNodeError` at run, before any network call.
 
 Inpaint note: the browser app composites the mask onto black at the source
 pixel size; the executor libraries pass your mask through verbatim — supply a
