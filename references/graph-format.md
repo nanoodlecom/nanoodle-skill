@@ -85,11 +85,27 @@ Headless executor support: local nodes (text, upload, aupload, vupload, choice,
 join, comment) run in-process; NanoGPT nodes (llm, image, edit, inpaint,
 vision, tvideo, ivideo, vedit, lipsync, music, remix, tts, transcribe) call the
 API; the rows marked LOCAL (resize, vframes, combine, soundtrack, trim,
-extractaudio) also run headlessly (npm 0.4+, PyPI 0.2+): Node prefers a
-pure-JS path that matches the browser (lossless mp4 remux, PCM-WAV trim, PNG
-resize) and falls back to ffmpeg on `PATH` for everything else; Python needs
-ffmpeg on `PATH` for all of them. ffmpeg is a soft dependency — a clear error
-if it's required and missing, before any paid call.
+extractaudio) also run headlessly (npm 0.4+, PyPI 0.2+), on the machine you run
+them on, without a paid API call. Node prefers a pure-JS path that matches the
+browser and falls back to ffmpeg for other formats; Python uses ffmpeg for all
+six nodes. Some operations also need ffprobe on `PATH`:
+
+| node | Node CLI / nanoodle-js | Python CLI / nanoodle-py |
+|---|---|---|
+| resize | pure JS for supported PNG sources, else ffmpeg | ffmpeg |
+| trim | pure JS for supported PCM WAV sources, else ffmpeg | ffmpeg |
+| combine | pure JS lossless mp4 remux when every clip is mp4 with matching stream parameters, else ffmpeg | ffmpeg |
+| vframes | ffmpeg | ffmpeg |
+| soundtrack | ffmpeg | ffmpeg |
+| extractaudio | ffmpeg | ffmpeg |
+
+ffmpeg is a soft dependency, not a package dependency. A node that needs it and
+cannot find it stops the run with a clear error naming it. That error arrives
+when the node runs, so paid upstream nodes may already have spent — run a
+media-only graph with representative inputs once to prove the setup first.
+
+Unknown node types (including the retired `draw` node) warn at load and throw
+`UnsupportedNodeError` at run, before any network call.
 
 Inpaint note: the browser app composites the mask onto black at the source
 pixel size; the executor libraries pass your mask through verbatim — supply a
