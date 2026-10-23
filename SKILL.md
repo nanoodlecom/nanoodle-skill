@@ -16,8 +16,17 @@ key, turn it into a shareable app, and export it as a single self-contained HTML
 file. There is no backend and no analytics — the API key and workflows stay in
 the browser (or, headlessly, in your process). A saved workflow is one JSON file
 (`noodle-graph.json`) that the official executor packages re-run byte-for-byte:
-`nanoodle` on npm (Node >= 20, zero deps) and `nanoodle` on PyPI (Python >= 3.9,
-stdlib only). Same graphs, same semantics, in either runtime.
+`nanoodle` on npm (zero dependencies) and `nanoodle` on PyPI (standard library
+only). Use patched Node 22.23.4, 24.22.1, or 26.12.1 and later security releases
+in those branches, or Python 3.11.17 / 3.12.15 and later security releases in
+those branches. Package metadata alone does not update an installed interpreter.
+Same graphs, same semantics, in either runtime.
+
+These runtime floors cover the [October Node security release](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)
+and [CPython server-side SNI issue](https://mail.python.org/archives/list/security-announce@python.org/thread/QMQIUQB6WGGC3MI7I3WKQXOYOBDSPPS3/).
+The latter does not affect the executor's HTTPS client calls. Verify the actual
+Node/Python process and its TLS trust store separately; package updates do not
+guarantee complete certificate distrust.
 
 ## API key (bring your own)
 
