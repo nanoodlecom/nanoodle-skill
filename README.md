@@ -55,11 +55,26 @@ your agent reads skills from.
 nanoodle-skill/
 ├── SKILL.md                        # the skill: run graphs via CLI or JS/Python library
 ├── references/graph-format.md      # noodle-graph.json format + node-type table
+├── references/state-machines.md    # lifecycle, failure/recovery, and release audit
+├── audit/check-executor-contracts.mjs # offline checks against a local nanoodle-js checkout
+├── audit/check-python-contracts.py # offline checks against a local nanoodle-py checkout
 └── examples/poster.noodle-graph.json  # runnable example: idea → LLM → poster image
 ```
 
 Runs require a NanoGPT API key (`NANOGPT_API_KEY`) with balance — generations
-spend real money. Loading and inspecting graphs is free and offline.
+spend real money. Loading and inspecting local files or direct fragment links
+does not generate or spend; resolving a short link requires network access.
+
+## Updates and recovery
+
+This repository distributes skill files directly from Git. Merging a change to
+`main` makes it available for subsequent installs/updates; an existing copied or
+installed skill must be updated separately. There is no package publication or
+running service in this repository.
+
+For partial runs, timeouts, payment waits, and output-save failures, follow
+[execution and recovery](SKILL.md#execution-failures-and-recovery). Re-running a
+graph starts fresh and can repeat paid work.
 
 ## Related
 

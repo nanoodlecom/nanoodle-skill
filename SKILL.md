@@ -41,7 +41,7 @@ calls the API; only `run` spends money.
 
 ## Run a graph headlessly
 
-### CLI (Node — `nanoodle` on npm; 0.8.0 is current, the core surface below needs >= 0.2.0; --pay needs 0.4+)
+### CLI (Node — `nanoodle` on npm; core surface needs >= 0.2.0; --pay needs 0.4+)
 
 ```sh
 export NANOGPT_API_KEY=...
@@ -53,7 +53,7 @@ npx nanoodle inspect graph.json
 npx nanoodle run graph.json --input Text="a cozy ramen shop"
 ```
 
-Full surface (from `npx nanoodle --help`):
+Common surface (check the installed version's `--help` for the full interface):
 
 ```
 nanoodle run <graph.json|share-url> [--input k=v]... [--set k=v]... [--out dir] [--json] [--key K] [--env-file path] [--timeout ms]
@@ -63,8 +63,10 @@ nanoodle --help | --version
 ```
 
 - `run` executes a workflow (needs an API key, spends from the balance);
-  `inspect` shows a workflow's inputs, outputs, and settings — fully offline, no
-  key needed; `init` writes the starter graph (text → LLM prompt-writer → image)
+  `inspect` shows a workflow's inputs, outputs, and settings — no generation or
+  key needed; local files and direct fragment links decode offline, while short
+  links need a network redirect lookup; `init` writes the starter graph
+  (text → LLM prompt-writer → image)
   to path (default `./noodle-graph.json`). Both `run` and `inspect` take a local
   file or a share URL directly.
 - `--input k=v` — set a workflow input (`Text=hello`, `n2.system=@notes.txt`;
@@ -76,17 +78,21 @@ nanoodle --help | --version
   `.png`. Text outputs land in the run summary.
 - `--json` — quiet mode: skips the progress/log lines on stderr. The JSON run
   summary — `outputs` (paths/text), `costUsd`, `costExact`, `remainingBalance`,
-  `errors`, per-node statuses — is **always** printed to stdout either way;
-  `--json` only silences the human-readable stderr chatter.
+  `errors`, per-node statuses — is printed to stdout after execution and output
+  saving; `--json` silences the human-readable progress chatter. Validation or
+  media-save failures can exit before a summary is printed: capture stderr too,
+  and never interpret empty stdout as proof that nothing was billed.
 - `--key K` / `--env-file p` — key precedence here: `--key` > `--env-file` >
   `NANOGPT_API_KEY`
 - `--pay` (0.4+) — accountless run, no API key or account: each paid call
   prints a Nano (XNO) invoice as a scannable QR + `nano:` URI on stderr and
   waits for the deposit (x402; ignores any configured key; a self-custody
   wallet does the send)
-- `--timeout ms` — overall run timeout, in milliseconds
-- Exit code 0 on success, 1 on failure (the JSON summary still carries partial
-  results when an output node failed)
+- `--timeout ms` — workflow execution timeout, in milliseconds; graph loading
+  and saving outputs are separate stages outside that deadline
+- Exit code 0 on success, 1 on failure. When available, the JSON summary
+  carries partial results when an output node failed. Check node statuses and
+  `errors` even on exit 0; see [execution and recovery](#execution-failures-and-recovery).
 
 ### CLI (Python — `pip install nanoodle`, >= 0.2.0)
 
@@ -96,11 +102,16 @@ flag surface:
 
 ```sh
 nanoodle-py inspect graph.json
-nanoodle-py run graph.json --input Text="a cozy ramen shop" --set n3.size=1k --out ./out
+nanoodle-py run graph.json --input Text="a cozy ramen shop" --set n3.size=1k --out ./out --json
 ```
 
 Porting notes (Python vs Node CLI):
 
+- Use `--json` for a machine-readable summary and partial `RunError` results.
+  Python's default output is human-readable; unlike Node, it does not always
+  print JSON. Media files are saved only when `--out` is supplied. In JSON mode
+  media outputs are objects with `url`, `mime`, and `file`, rather than Node's
+  path strings. Saving can fail after generation; retain stderr as well.
 - The key flag is `--api-key` (not `--key`).
 - `--timeout` is in **seconds** (not milliseconds).
 - An ambient `NANOGPT_API_KEY` wins over `--env-file`; in the Node CLI
@@ -150,6 +161,46 @@ are the sink node's custom name (or its type name). Settings use `nodeId.field`
 keys (`"n3.model"`). A workflow with exactly one required input also accepts a
 bare value: `wf.run("hello")`. Run `inspect` to see the real keys — what it
 prints is authoritative.
+
+## Execution, failures, and recovery
+
+Treat a run as several transitions: load → inspect → resolve inputs/settings →
+execute nodes → collect outcomes/costs → download/save outputs → verify files.
+`inspect` describes the interface; it does **not** execute nodes or prove that
+models, media codecs, credentials, remote inputs, or the output directory work.
+
+- Nodes wait for their own dependencies; independent lanes can run concurrently.
+  A failure in one lane does not undo successful or still-running paid work in
+  another. Downstream failures may happen after an upstream generation spent.
+- Distinguish `done`, `error`, and `skipped` node outcomes. Executors supporting
+  Decide gates also report `gated`: a closed gate is a successful stop, and its
+  skipped descendants have no output. Do not retry a closed gate as a failure.
+  `onError: "skip"`, where supported, can also leave errors in a successful run.
+  Use the installed executor's statuses, `errors`, and `gated` records to explain
+  which outputs actually exist; do not assume exit 0 means every node generated.
+- A timeout, Ctrl-C, lost response, or failed media download does not prove a
+  provider job was cancelled or unbilled. Preserve stderr, the result/summary,
+  any provider job IDs, payment records, and already-saved files. Check accepted
+  jobs with the provider before submitting again; job-ID availability depends
+  on executor/version. Never blindly retry a generation or send a second payment.
+- Each `run` is a fresh execution, with no durable checkpoint or automatic resume
+  of completed nodes. Re-running the same graph can repeat paid calls. If only
+  saving failed, reuse an available `MediaRef`, output URL, or local artifact
+  and retry the download/save instead of running the graph again. If no result
+  survived, reconcile provider status first.
+- Use a fresh `--out` directory for each run. Output names are derived from node
+  names and can overwrite prior files; names that sanitize to the same filename
+  can also collide. Give output nodes distinct, filename-safe names, and verify
+  that the expected files exist before reporting completion. Generation success
+  and durable local delivery are separate outcomes.
+- Cost is the sum **reported so far**. `costExact: false` (Python library:
+  `cost_exact`) means a lower bound, and a missing balance is unknown. Neither a
+  missing summary nor a reported zero establishes that an interrupted request
+  was free. `--pay` selects a different payment mode; it ignores a configured
+  API key and can request a separate invoice for each paid call.
+
+See [the state-machine audit](references/state-machines.md) for the complete
+lifecycle inventory, source evidence, offline checks, and release behavior.
 
 ## The noodle-graph.json shape
 
@@ -242,12 +293,14 @@ comment otherwise. The Python CLI (PyPI 0.2.0+) runs share URLs the same way.
 ## Limits and cost — be honest with the user
 
 - **Stateless feed-forward DAG.** No loops, no branches that re-enter, no
-  memory between runs. Each run is: inputs in → nodes execute in topological
-  order → outputs out.
+  durable workflow checkpoint between runs. Dependencies determine execution
+  order; independent lanes run concurrently. Decide gates, where supported by
+  the installed executor, can stop a lane without an error.
 - **Every run spends real money** (except nodes that run locally). Costs are
   per-generation via NanoGPT; the result reports `costUsd`/`cost_usd`,
-  `costExact` (false means some call omitted a price, so the total is a floor)
-  and `remainingBalance`. A price of 0 means subscription-included, not unknown.
+  `costExact` / `cost_exact` (false means the total is a floor)
+  and `remainingBalance` / `remaining_balance`. A reported price of 0 means
+  subscription-included, not unknown.
 - **Headless executors support the NanoGPT-backed nodes** (llm, image,
   edit, inpaint, vision, tvideo, ivideo, vedit, lipsync, music, remix, tts,
   transcribe) plus local ones (text, uploads, choice, join, comment). Local
@@ -259,10 +312,14 @@ comment otherwise. The Python CLI (PyPI 0.2.0+) runs share URLs the same way.
   dependency — a clear error if it's required and missing. That error arrives
   when the node runs, so paid upstream nodes may already have spent. Run a
   media-only graph with representative inputs once to prove the setup first.
-- **Media rides inline as base64** (NanoGPT has no upload endpoint). Files over
-  ~4.4 MB (~3.5 MB for transcription) are refused locally before any paid call.
-- Missing keys, bad inputs, and unknown node types all fail **before** anything
-  is spent.
+- **Media rides inline as base64** (NanoGPT has no upload endpoint). Network
+  inputs face an inline-size budget of ~4.4 MB (~3.5 MB for transcription).
+  Checks and image fitting depend on node/runtime; oversized generated media
+  can fail at a later node after upstream work has already spent.
+- Upfront checks catch missing credentials, unknown input/setting keys, required
+  inputs, cycles, and unsupported node types before execution. Node-specific
+  model, media, codec, and provider validation can fail later, after another
+  node has spent. Inspection alone does not establish a free or successful run.
 
 ## Full reference
 
