@@ -22,7 +22,7 @@ in those branches, or Python 3.11.17 / 3.12.15 and later security releases in
 those branches. Package metadata alone does not update an installed interpreter.
 Same graphs, same semantics, in either runtime.
 
-These runtime floors cover the [October Node security release](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)
+These runtime floors cover the [November Node security release](https://nodejs.org/en/blog/vulnerability/november-2026-security-releases)
 and [CPython server-side SNI issue](https://mail.python.org/archives/list/security-announce@python.org/thread/QMQIUQB6WGGC3MI7I3WKQXOYOBDSPPS3/).
 The latter does not affect the executor's HTTPS client calls. Verify the actual
 Node/Python process and its TLS trust store separately; package updates do not
